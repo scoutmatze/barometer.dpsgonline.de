@@ -1,0 +1,48 @@
+services:
+  app:
+    build: .
+    environment:
+      - DATABASE_URL=postgresql://dpsg:${DB_PASSWORD}@db:5432/dpsg_barometer
+      - JWT_SECRET=${JWT_SECRET}
+      - NEXT_PUBLIC_BASE_URL=https://barometer.dpsgonline.de
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.barometer.rule=Host(`barometer.dpsgonline.de`)"
+      - "traefik.http.routers.barometer.entrypoints=websecure"
+      - "traefik.http.routers.barometer.tls.certresolver=letsencrypt"
+      - "traefik.http.services.barometer.loadbalancer.server.port=3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - web
+      - internal
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_DB=dpsg_barometer
+      - POSTGRES_USER=dpsg
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dpsg -d dpsg_barometer"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - internal
+
+volumes:
+  pgdata:
+
+networks:
+  web:
+    external: true
+    name: dpsg-reisekosten_web
+  internal:
+    driver: bridge
