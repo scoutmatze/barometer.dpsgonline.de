@@ -182,21 +182,104 @@ export default function LiveParticipant({ params }: { params: Promise<{ code: st
               </div>
             )}
 
-            {/* === POLL === */}
+            {/* === POLL with custom options === */}
             {act.type === 'poll' && (
               <div style={{ background: 'white', borderRadius: 16, border: '1px solid #e8e5df', padding: '20px 16px' }}>
-                <h3 style={{ fontSize: 20, fontWeight: 700, color: '#1a1815', margin: '0 0 16px' }}>{act.title}</h3>
+                <h3 style={{ fontSize: 20, fontWeight: 700, color: '#1a1815', margin: '0 0 4px' }}>{act.title}</h3>
+                <p style={{ fontSize: 13, color: '#7a756c', margin: '0 0 16px' }}>Wähle eine Option</p>
                 {submitted[act.id] ? (
-                  <p style={{ textAlign: 'center', fontSize: 15, fontWeight: 700, color: '#16a34a' }}>&#10003; Abgestimmt!</p>
-                ) : (
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button onClick={() => submitResponse(act.id, 1, 'Ja')}
-                      style={{ flex: 1, padding: '16px', borderRadius: 12, border: '2px solid #16a34a', background: '#dcfce7', fontSize: 18, fontWeight: 700, color: '#16a34a', cursor: 'pointer' }}>
-                      Ja
+                  <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                    <div style={{ fontSize: 36, marginBottom: 8 }}>&#10003;</div>
+                    <p style={{ fontSize: 15, fontWeight: 700, color: '#16a34a' }}>Abgestimmt!</p>
+                    <button onClick={() => setSubmitted(prev => ({ ...prev, [act.id]: false }))}
+                      style={{ marginTop: 12, padding: '8px 20px', borderRadius: 10, border: '1px solid #d4d0c8', background: 'white', fontSize: 13, cursor: 'pointer' }}>
+                      Antwort ändern
                     </button>
-                    <button onClick={() => submitResponse(act.id, 0, 'Nein')}
-                      style={{ flex: 1, padding: '16px', borderRadius: 12, border: '2px solid #ef4444', background: '#fef2f2', fontSize: 18, fontWeight: 700, color: '#ef4444', cursor: 'pointer' }}>
-                      Nein
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {(act.config?.options || ['Ja', 'Nein']).map((opt: string, oi: number) => (
+                      <button key={oi} onClick={() => submitResponse(act.id, oi, opt)} disabled={sending}
+                        style={{
+                          width: '100%', minHeight: 52, padding: '12px 16px', borderRadius: 14,
+                          border: '2px solid #d4d0c8', background: 'white', cursor: 'pointer',
+                          fontSize: 16, fontWeight: 600, color: '#1a1815', textAlign: 'left',
+                          WebkitTapHighlightColor: 'transparent',
+                        }}>
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* === SCALE === */}
+            {act.type === 'scale' && (
+              <div style={{ background: 'white', borderRadius: 16, border: '1px solid #e8e5df', padding: '20px 16px' }}>
+                <h3 style={{ fontSize: 20, fontWeight: 700, color: '#1a1815', margin: '0 0 4px' }}>{act.title}</h3>
+                <p style={{ fontSize: 13, color: '#7a756c', margin: '0 0 16px' }}>Wähle einen Wert</p>
+                {submitted[act.id] ? (
+                  <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                    <div style={{ fontSize: 36, marginBottom: 8 }}>&#10003;</div>
+                    <p style={{ fontSize: 15, fontWeight: 700, color: '#16a34a' }}>Gespeichert!</p>
+                    <button onClick={() => setSubmitted(prev => ({ ...prev, [act.id]: false }))}
+                      style={{ marginTop: 12, padding: '8px 20px', borderRadius: 10, border: '1px solid #d4d0c8', background: 'white', fontSize: 13, cursor: 'pointer' }}>
+                      Antwort ändern
+                    </button>
+                  </div>
+                ) : (() => {
+                  const max = act.config?.max || 10;
+                  const min = act.config?.min || 1;
+                  const rows = max <= 5
+                    ? [Array.from({ length: max - min + 1 }, (_, i) => min + i)]
+                    : [Array.from({ length: 5 }, (_, i) => min + i), Array.from({ length: max - 5 }, (_, i) => min + 5 + i)];
+                  return (
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#7a756c', marginBottom: 6, padding: '0 4px' }}>
+                        <span>wenig</span><span>sehr</span>
+                      </div>
+                      {rows.map((row, ri) => (
+                        <div key={ri} style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
+                          {row.map(n => {
+                            const pct = (n - min) / (max - min);
+                            const color = pct >= 0.8 ? '#16a34a' : pct >= 0.6 ? '#65a30d' : pct >= 0.4 ? '#eab308' : pct >= 0.2 ? '#f97316' : '#ef4444';
+                            return (
+                              <button key={n} onClick={() => submitResponse(act.id, n)} disabled={sending}
+                                style={{
+                                  flex: 1, aspectRatio: '1', maxHeight: 56, minHeight: 44, borderRadius: 12,
+                                  border: '2px solid #e8e5df', background: 'white', color: '#3d3a36',
+                                  fontSize: 18, fontWeight: 700, cursor: 'pointer',
+                                  WebkitTapHighlightColor: 'transparent',
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                }}>
+                                {n}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+
+            {/* === OPEN Q&A === */}
+            {act.type === 'openqa' && (
+              <div style={{ background: 'white', borderRadius: 16, border: '1px solid #e8e5df', padding: '20px 16px' }}>
+                <h3 style={{ fontSize: 20, fontWeight: 700, color: '#1a1815', margin: '0 0 4px' }}>{act.title}</h3>
+                <p style={{ fontSize: 13, color: '#7a756c', margin: '0 0 16px' }}>Schreib deinen Vorschlag</p>
+                {!submitted[act.id] && (
+                  <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+                    <input value={wordInput} onChange={e => setWordInput(e.target.value)}
+                      placeholder="Dein Vorschlag..."
+                      onKeyDown={e => { if (e.key === 'Enter' && wordInput.trim()) { submitResponse(act.id, undefined, wordInput.trim()); setWordInput(''); }}}
+                      style={{ flex: 1, padding: '12px 14px', borderRadius: 12, border: '2px solid #e8e5df', fontSize: 16, boxSizing: 'border-box' as any }} />
+                    <button onClick={() => { if (wordInput.trim()) { submitResponse(act.id, undefined, wordInput.trim()); setWordInput(''); }}}
+                      disabled={!wordInput.trim() || sending}
+                      style={{ padding: '12px 20px', borderRadius: 12, background: wordInput.trim() ? '#003056' : '#d4d0c8', color: 'white', border: 'none', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>
+                      &#10148;
                     </button>
                   </div>
                 )}

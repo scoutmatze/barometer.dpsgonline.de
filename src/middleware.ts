@@ -4,7 +4,7 @@ import { jwtVerify } from 'jose';
 
 const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'dev-secret-change-me');
 
-const publicPaths = ['/login', '/umfrage', '/live', '/beamer', '/api/auth', '/api/submit', '/api/surveys/token', '/api/live/join', '/api/live/respond', '/api/qr'];
+const publicPaths = ['/login', '/umfrage', '/live', '/beamer', '/api/auth', '/api/submit', '/api/surveys/token', '/api/live/join', '/api/live/respond', '/api/live/upvote', '/api/qr'];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;

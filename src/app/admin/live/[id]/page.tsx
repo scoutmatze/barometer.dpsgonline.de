@@ -1,8 +1,7 @@
-
 'use client';
 import { useState, useEffect, use, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Play, Square, Radio, Copy, Check, Monitor, Unlock, Lock, Sun, Cloud, MessageSquare, Plus } from 'lucide-react';
+import { ArrowLeft, Play, Square, Radio, Copy, Check, Monitor, Unlock, Lock, Sun, Cloud, MessageSquare, Plus, Hash, HelpCircle } from 'lucide-react';
 
 const WEATHER = [
   { value: 1, label: 'Sonnig', color: '#f59e0b', bg: '#fef3c7' },
@@ -12,6 +11,10 @@ const WEATHER = [
   { value: 5, label: 'Gewittrig', color: '#7c3aed', bg: '#ede9fe' },
 ];
 
+const TYPE_LABELS: Record<string, string> = {
+  weather: 'Wettercheck', wordcloud: 'Word Cloud', poll: 'Poll', scale: 'Skala', openqa: 'Offene Frage',
+};
+
 export default function ManageLiveSession({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
@@ -19,6 +22,9 @@ export default function ManageLiveSession({ params }: { params: Promise<{ id: st
   const [results, setResults] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [showAdd, setShowAdd] = useState<string | null>(null);
+  const [newTitle, setNewTitle] = useState('');
+  const [pollOptions, setPollOptions] = useState('');
 
   const fetchData = useCallback(() => {
     fetch('/api/live/' + id).then(r => r.json()).then(setSession);
@@ -38,17 +44,40 @@ export default function ManageLiveSession({ params }: { params: Promise<{ id: st
     fetchData();
   }
 
-  async function addActivity(type: string, title: string, openImmediately: boolean) {
+  async function addActivity(type: string, title: string, config: any, openImm: boolean) {
     await fetch('/api/live/' + id, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ add_activity: { type, title, config: {}, open_immediately: openImmediately } }),
+      body: JSON.stringify({ add_activity: { type, title, config, open_immediately: openImm } }),
     });
+    setShowAdd(null); setNewTitle(''); setPollOptions('');
     fetchData();
   }
 
   function copyLink() {
     navigator.clipboard.writeText(window.location.origin + '/live/' + session?.access_code);
     setCopied(true); setTimeout(() => setCopied(false), 2000);
+  }
+
+  function startAdd(type: string) {
+    const defaults: Record<string, string> = {
+      weather: 'Wie geht es dir?', wordcloud: 'Was beschreibt deine Stimmung?',
+      poll: 'Abstimmung', scale: 'Wie energiegeladen bist du?', openqa: 'Was sollten wir besprechen?',
+    };
+    setNewTitle(defaults[type] || '');
+    setPollOptions(type === 'poll' ? 'Option A\nOption B\nEnthaltung' : '');
+    setShowAdd(type);
+  }
+
+  function confirmAdd() {
+    if (!showAdd || !newTitle.trim()) return;
+    const config: any = {};
+    if (showAdd === 'poll') {
+      config.options = pollOptions.split('\n').map(s => s.trim()).filter(Boolean);
+    }
+    if (showAdd === 'scale') {
+      config.min = 1; config.max = 10;
+    }
+    addActivity(showAdd, newTitle.trim(), config, session?.status === 'active');
   }
 
   if (loading || !session) return <div className="flex min-h-screen items-center justify-center text-sm text-dpsg-gray-400">Laden...</div>;
@@ -63,7 +92,7 @@ export default function ManageLiveSession({ params }: { params: Promise<{ id: st
             <button onClick={() => router.push('/admin/live')} className="opacity-70 hover:opacity-100"><ArrowLeft className="h-5 w-5" /></button>
             <div>
               <div className="text-base font-bold">{session.title}</div>
-              <div className="text-xs opacity-50">{session.subtitle} &middot; Code: <span className="font-mono">{session.access_code}</span></div>
+              <div className="text-xs opacity-50">{session.subtitle} · Code: <span className="font-mono">{session.access_code}</span></div>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -92,7 +121,7 @@ export default function ManageLiveSession({ params }: { params: Promise<{ id: st
       <div className="mx-auto max-w-5xl px-6 py-8 space-y-4">
         {session.status === 'active' && (
           <div className="flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
-            <Radio className="h-4 w-4 animate-pulse" /> Session ist live &middot; Teilnahme-Link: <span className="font-mono font-bold">{window.location.origin}/live/{session.access_code}</span>
+            <Radio className="h-4 w-4 animate-pulse" /> Session ist live · <span className="font-mono font-bold">{typeof window !== 'undefined' ? window.location.origin : ''}/live/{session.access_code}</span>
           </div>
         )}
 
@@ -107,7 +136,7 @@ export default function ManageLiveSession({ params }: { params: Promise<{ id: st
               <div className="mb-3 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="rounded-md bg-dpsg-blue/10 px-2 py-1 text-xs font-semibold text-dpsg-blue">
-                    {act.type === 'weather' ? 'Wettercheck' : act.type === 'wordcloud' ? 'Word Cloud' : 'Poll'}
+                    {TYPE_LABELS[act.type] || act.type}
                   </span>
                   <h3 className="text-sm font-bold text-dpsg-gray-900">{act.title}</h3>
                   <span className="text-xs text-dpsg-gray-400">{count} Antworten</span>
@@ -162,13 +191,54 @@ export default function ManageLiveSession({ params }: { params: Promise<{ id: st
               )}
 
               {/* Poll results */}
-              {act.type === 'poll' && responses.length > 0 && (
-                <div className="text-sm text-dpsg-gray-500">{count} Stimmen eingegangen</div>
+              {act.type === 'poll' && responses.length > 0 && (() => {
+                const options = act.config?.options || ['Ja', 'Nein'];
+                return (
+                  <div className="space-y-2">
+                    {options.map((opt: string, oi: number) => {
+                      const optCount = responses.filter((r: any) => r.value_numeric === oi).length;
+                      const pct = count > 0 ? (optCount / count) * 100 : 0;
+                      return (
+                        <div key={oi}>
+                          <div className="mb-1 flex justify-between text-xs"><span className="font-semibold text-dpsg-gray-700">{opt}</span><span className="text-dpsg-gray-400">{optCount} ({pct.toFixed(0)}%)</span></div>
+                          <div className="h-4 rounded-full bg-dpsg-gray-100 overflow-hidden">
+                            <div className="h-full rounded-full bg-dpsg-blue transition-all" style={{ width: pct + '%' }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+
+              {/* Scale results */}
+              {act.type === 'scale' && responses.length > 0 && (() => {
+                const vals = responses.map((r: any) => r.value_numeric).filter((v: number) => v > 0);
+                const avg = vals.length > 0 ? vals.reduce((a: number, b: number) => a + b, 0) / vals.length : 0;
+                const max = act.config?.max || 10;
+                return (
+                  <div className="text-center py-2">
+                    <div className="text-4xl font-bold text-dpsg-blue">{avg.toFixed(1)}</div>
+                    <div className="text-xs text-dpsg-gray-400">Durchschnitt von {max} · {vals.length} Antworten</div>
+                  </div>
+                );
+              })()}
+
+              {/* Open Q&A results */}
+              {act.type === 'openqa' && responses.length > 0 && (
+                <div className="space-y-1">
+                  {responses.sort((a: any, b: any) => (b.upvotes || 0) - (a.upvotes || 0)).map((r: any, i: number) => (
+                    <div key={i} className="flex items-center gap-2 rounded-lg bg-dpsg-gray-50 px-3 py-2">
+                      <span className="rounded-md bg-dpsg-blue/10 px-2 py-0.5 text-xs font-bold text-dpsg-blue">{r.upvotes || 0}</span>
+                      <span className="text-sm text-dpsg-gray-700">{r.value_text}</span>
+                    </div>
+                  ))}
+                </div>
               )}
 
               {responses.length === 0 && <p className="text-xs text-dpsg-gray-400">Noch keine Antworten</p>}
 
-              {/* Comments */}
+              {/* Comments (weather) */}
               {act.type === 'weather' && responses.filter((r: any) => r.value_text).length > 0 && (
                 <div className="mt-3 space-y-1">
                   <p className="text-xs font-semibold text-dpsg-gray-500">Kommentare:</p>
@@ -184,26 +254,56 @@ export default function ManageLiveSession({ params }: { params: Promise<{ id: st
         {/* Quick-Add Aktivität */}
         {(session.status === 'active' || session.status === 'draft') && (
           <div className="rounded-xl border border-dashed border-dpsg-gray-200 bg-white p-5">
-            <div className="mb-3 flex items-center gap-2">
-              <Plus className="h-4 w-4 text-dpsg-gray-400" />
-              <h3 className="text-sm font-bold text-dpsg-gray-600">Aktivität hinzufügen</h3>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <button onClick={() => addActivity('weather', 'Wie geht es dir?', session.status === 'active')}
-                className="flex items-center gap-1.5 rounded-lg border border-dpsg-gray-200 px-4 py-2.5 text-sm font-semibold text-dpsg-gray-700 hover:bg-dpsg-gray-50 hover:border-dpsg-blue/30">
-                <Sun className="h-4 w-4 text-amber-500" /> Wettercheck
-              </button>
-              <button onClick={() => addActivity('wordcloud', 'Was beschreibt deine Stimmung?', session.status === 'active')}
-                className="flex items-center gap-1.5 rounded-lg border border-dpsg-gray-200 px-4 py-2.5 text-sm font-semibold text-dpsg-gray-700 hover:bg-dpsg-gray-50 hover:border-dpsg-blue/30">
-                <Cloud className="h-4 w-4 text-blue-500" /> Word Cloud
-              </button>
-              <button onClick={() => addActivity('poll', 'Abstimmung', session.status === 'active')}
-                className="flex items-center gap-1.5 rounded-lg border border-dpsg-gray-200 px-4 py-2.5 text-sm font-semibold text-dpsg-gray-700 hover:bg-dpsg-gray-50 hover:border-dpsg-blue/30">
-                <MessageSquare className="h-4 w-4 text-purple-500" /> Live-Poll
-              </button>
-            </div>
-            {session.status === 'active' && (
-              <p className="mt-2 text-xs text-dpsg-gray-400">Wird sofort geöffnet und ist für Teilnehmende sichtbar.</p>
+            {showAdd ? (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <span className="rounded-md bg-dpsg-blue/10 px-2 py-1 text-xs font-semibold text-dpsg-blue">{TYPE_LABELS[showAdd]}</span>
+                  <h3 className="text-sm font-bold text-dpsg-gray-600">Neue Aktivität</h3>
+                </div>
+                <input value={newTitle} onChange={e => setNewTitle(e.target.value)} placeholder="Titel / Frage"
+                  className="w-full rounded-lg border border-dpsg-gray-200 bg-white px-3 py-2 text-sm focus:border-dpsg-blue focus:outline-none focus:ring-2 focus:ring-dpsg-blue/20"
+                  onKeyDown={e => { if (e.key === 'Enter' && showAdd !== 'poll') confirmAdd(); }} autoFocus />
+                {showAdd === 'poll' && (
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-dpsg-gray-600">Optionen (eine pro Zeile)</label>
+                    <textarea value={pollOptions} onChange={e => setPollOptions(e.target.value)} rows={4}
+                      placeholder={"Option A\nOption B\nOption C\nEnthaltung"}
+                      className="w-full rounded-lg border border-dpsg-gray-200 bg-white px-3 py-2 text-sm focus:border-dpsg-blue focus:outline-none focus:ring-2 focus:ring-dpsg-blue/20" />
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <button onClick={confirmAdd} disabled={!newTitle.trim()}
+                    className="rounded-lg bg-dpsg-blue px-4 py-2 text-sm font-semibold text-white hover:bg-dpsg-blue-light disabled:opacity-50">
+                    {session.status === 'active' ? 'Hinzufügen & öffnen' : 'Hinzufügen'}
+                  </button>
+                  <button onClick={() => setShowAdd(null)}
+                    className="rounded-lg bg-dpsg-gray-100 px-4 py-2 text-sm font-semibold text-dpsg-gray-600">Abbrechen</button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="mb-3 flex items-center gap-2">
+                  <Plus className="h-4 w-4 text-dpsg-gray-400" />
+                  <h3 className="text-sm font-bold text-dpsg-gray-600">Aktivität hinzufügen</h3>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button onClick={() => startAdd('weather')} className="flex items-center gap-1.5 rounded-lg border border-dpsg-gray-200 px-4 py-2.5 text-sm font-semibold text-dpsg-gray-700 hover:bg-dpsg-gray-50">
+                    <Sun className="h-4 w-4 text-amber-500" /> Wettercheck
+                  </button>
+                  <button onClick={() => startAdd('wordcloud')} className="flex items-center gap-1.5 rounded-lg border border-dpsg-gray-200 px-4 py-2.5 text-sm font-semibold text-dpsg-gray-700 hover:bg-dpsg-gray-50">
+                    <Cloud className="h-4 w-4 text-blue-500" /> Word Cloud
+                  </button>
+                  <button onClick={() => startAdd('poll')} className="flex items-center gap-1.5 rounded-lg border border-dpsg-gray-200 px-4 py-2.5 text-sm font-semibold text-dpsg-gray-700 hover:bg-dpsg-gray-50">
+                    <MessageSquare className="h-4 w-4 text-purple-500" /> Poll
+                  </button>
+                  <button onClick={() => startAdd('scale')} className="flex items-center gap-1.5 rounded-lg border border-dpsg-gray-200 px-4 py-2.5 text-sm font-semibold text-dpsg-gray-700 hover:bg-dpsg-gray-50">
+                    <Hash className="h-4 w-4 text-green-600" /> Skala
+                  </button>
+                  <button onClick={() => startAdd('openqa')} className="flex items-center gap-1.5 rounded-lg border border-dpsg-gray-200 px-4 py-2.5 text-sm font-semibold text-dpsg-gray-700 hover:bg-dpsg-gray-50">
+                    <HelpCircle className="h-4 w-4 text-coral-500" /> Offene Frage
+                  </button>
+                </div>
+              </>
             )}
           </div>
         )}
