@@ -4,13 +4,18 @@ import { jwtVerify } from 'jose';
 
 const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'dev-secret-change-me');
 
-const publicPaths = ['/login', '/umfrage', '/api/auth', '/api/submit', '/api/surveys/token'];
+const publicPaths = ['/login', '/umfrage', '/live', '/beamer', '/api/auth', '/api/submit', '/api/surveys/token', '/api/live/join', '/api/live/respond', '/api/qr'];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Public paths
   if (publicPaths.some(p => pathname.startsWith(p))) {
+    return NextResponse.next();
+  }
+
+  // Live results endpoint (public for beamer)
+  if (pathname.match(/^\/api\/live\/\d+\/results$/)) {
     return NextResponse.next();
   }
 

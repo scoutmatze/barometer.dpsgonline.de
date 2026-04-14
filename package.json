@@ -16,7 +16,8 @@
     "jose": "^6.0.11",
     "bcryptjs": "^2.4.3",
     "lucide-react": "^0.468.0",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "qrcode": "^1.5.4"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
@@ -24,6 +25,7 @@
     "@types/react-dom": "^19.0.0",
     "@types/pg": "^8.11.0",
     "@types/bcryptjs": "^2.4.6",
+    "@types/qrcode": "^1.5.5",
     "typescript": "^5.7.0",
     "tsx": "^4.19.0",
     "tailwindcss": "^4.0.0",

@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, BarChart3, Upload, LogOut, ClipboardList, Lock, Unlock, Eye } from 'lucide-react';
+import { Plus, BarChart3, Upload, LogOut, ClipboardList, Lock, Unlock, Eye, Zap } from 'lucide-react';
 
 interface Survey {
   id: number;
@@ -89,6 +89,10 @@ export default function AdminDashboard() {
             <p className="text-sm text-dpsg-gray-500">Rückmeldungen verwalten und auswerten</p>
           </div>
           <div className="flex gap-2">
+            <button onClick={() => router.push('/admin/live')}
+              className="flex items-center gap-1.5 rounded-lg bg-dpsg-red px-3 py-2 text-xs font-semibold text-white hover:bg-dpsg-red-light">
+              <Zap className="h-3.5 w-3.5" /> Live-Sessions
+            </button>
             <button onClick={() => router.push('/admin/import')}
               className="flex items-center gap-1.5 rounded-lg bg-dpsg-gray-100 px-3 py-2 text-xs font-semibold text-dpsg-gray-700 hover:bg-dpsg-gray-200">
               <Upload className="h-3.5 w-3.5" /> Import
