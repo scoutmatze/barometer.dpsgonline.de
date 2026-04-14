@@ -8,15 +8,24 @@ import { LogOut, BarChart3, Eye, GitCompare } from 'lucide-react';
 export default function AuswertungPage() {
   const router = useRouter();
   const [surveys, setSurveys] = useState<any[]>([]);
+  const [categories, setCategories] = useState<string[]>(['BL']);
+  const [activeCategory, setActiveCategory] = useState('BL');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/surveys').then(r => r.json()).then(data => {
+    fetch('/api/categories').then(r => r.json()).then(cats => {
+      if (Array.isArray(cats) && cats.length > 0) setCategories(cats);
+    });
+  }, []);
+
+  useEffect(() => {
+    setLoading(true);
+    fetch('/api/surveys?category=' + encodeURIComponent(activeCategory)).then(r => r.json()).then(data => {
       const list = Array.isArray(data) ? data : [];
       setSurveys(list.filter((s: any) => s.status === 'closed' || s.status === 'active'));
       setLoading(false);
     });
-  }, []);
+  }, [activeCategory]);
 
   async function logout() {
     await fetch('/api/auth', { method: 'DELETE' });
@@ -37,7 +46,7 @@ export default function AuswertungPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => router.push('/auswertung/vergleich')}
+            <button onClick={() => router.push('/auswertung/vergleich?category=' + encodeURIComponent(activeCategory))}
               className="flex items-center gap-1 rounded-lg bg-white/10 px-3 py-1.5 text-xs hover:bg-white/20">
               <GitCompare className="h-3 w-3" /> Vergleich
             </button>
@@ -51,7 +60,20 @@ export default function AuswertungPage() {
 
       <div className="mx-auto max-w-5xl px-6 py-8">
         <h1 className="mb-1 text-xl font-bold text-dpsg-gray-900">Sitzungen</h1>
-        <p className="mb-6 text-sm text-dpsg-gray-500">Ergebnisse und Vergleiche einsehen</p>
+        <p className="mb-4 text-sm text-dpsg-gray-500">Ergebnisse und Vergleiche einsehen</p>
+
+        {/* Category Tabs */}
+        <div className="mb-5 flex items-center gap-2 overflow-x-auto">
+          {categories.map(cat => (
+            <button key={cat} onClick={() => setActiveCategory(cat)}
+              className={'rounded-lg px-4 py-2 text-sm font-semibold transition-all '
+                + (activeCategory === cat
+                  ? 'bg-dpsg-blue text-white'
+                  : 'bg-dpsg-gray-100 text-dpsg-gray-600 hover:bg-dpsg-gray-200')}>
+              {cat}
+            </button>
+          ))}
+        </div>
 
         {loading ? (
           <div className="py-20 text-center text-sm text-dpsg-gray-400">Laden...</div>

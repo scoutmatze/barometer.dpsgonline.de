@@ -1,24 +1,25 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import { requireUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     await requireUser(['ADMIN', 'BL']);
+    const category = request.nextUrl.searchParams.get('category');
 
-    // Get all closed/active surveys with their data
     const surveys = await pool.query(`
-      SELECT s.id, s.title, s.subtitle, s.survey_date, s.status,
+      SELECT s.id, s.title, s.subtitle, s.survey_date, s.status, s.category,
         s.zusammenarbeit_items, s.numeric_items,
         (SELECT COUNT(*) FROM responses r WHERE r.survey_id = s.id) as response_count,
         (SELECT json_agg(json_build_object('id', a.id, 'label', a.label, 'sort_order', a.sort_order)
           ORDER BY a.sort_order) FROM survey_agenda_items a WHERE a.survey_id = s.id) as agenda_items
       FROM surveys s
       WHERE s.status IN ('closed', 'active')
+      ${category ? 'AND s.category = $1' : ''}
       ORDER BY s.survey_date ASC NULLS LAST
-    `);
+    `, category ? [category] : []);
 
     // Get aggregated answers per survey
     const results = [];

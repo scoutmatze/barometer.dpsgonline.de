@@ -13,20 +13,31 @@ interface Survey {
   status: string;
   response_count: number;
   agenda_items: any[];
+  category: string;
   created_at: string;
 }
 
 export default function AdminDashboard() {
   const router = useRouter();
   const [surveys, setSurveys] = useState<Survey[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [activeCategory, setActiveCategory] = useState<string>('BL');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/surveys').then(r => r.json()).then(data => {
+    fetch('/api/categories').then(r => r.json()).then(cats => {
+      if (Array.isArray(cats) && cats.length > 0) setCategories(cats);
+      else setCategories(['BL']);
+    });
+  }, []);
+
+  useEffect(() => {
+    setLoading(true);
+    fetch('/api/surveys?category=' + encodeURIComponent(activeCategory)).then(r => r.json()).then(data => {
       setSurveys(Array.isArray(data) ? data : []);
       setLoading(false);
     });
-  }, []);
+  }, [activeCategory]);
 
   async function logout() {
     await fetch('/api/auth', { method: 'DELETE' });
@@ -102,6 +113,29 @@ export default function AdminDashboard() {
               <Plus className="h-4 w-4" /> Neue Sitzung
             </button>
           </div>
+        </div>
+
+        {/* Category Tabs */}
+        <div className="mb-5 flex items-center gap-2 overflow-x-auto">
+          {categories.map(cat => (
+            <button key={cat} onClick={() => setActiveCategory(cat)}
+              className={'rounded-lg px-4 py-2 text-sm font-semibold transition-all '
+                + (activeCategory === cat
+                  ? 'bg-dpsg-blue text-white'
+                  : 'bg-dpsg-gray-100 text-dpsg-gray-600 hover:bg-dpsg-gray-200')}>
+              {cat}
+            </button>
+          ))}
+          <button onClick={() => {
+            const name = prompt('Name der neuen Kategorie:');
+            if (name && name.trim()) {
+              setCategories(prev => [...new Set([...prev, name.trim()])]);
+              setActiveCategory(name.trim());
+            }
+          }}
+            className="rounded-lg border border-dashed border-dpsg-gray-200 px-3 py-2 text-xs font-semibold text-dpsg-gray-400 hover:border-dpsg-gray-400 hover:text-dpsg-gray-600">
+            + Kategorie
+          </button>
         </div>
 
         {loading ? (

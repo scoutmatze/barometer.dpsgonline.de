@@ -10,6 +10,7 @@ export default function NewSurveyPage() {
   const [title, setTitle] = useState('');
   const [subtitle, setSubtitle] = useState('');
   const [date, setDate] = useState('');
+  const [category, setCategory] = useState('BL');
   const [agendaText, setAgendaText] = useState('');
   const [emails, setEmails] = useState('');
   const [openAccess, setOpenAccess] = useState(true);
@@ -32,6 +33,7 @@ export default function NewSurveyPage() {
           title: title.trim(),
           subtitle: subtitle.trim(),
           survey_date: date || null,
+          category: category.trim() || 'BL',
           agenda_items: agendaItems,
           emails: emailList,
           open_access_enabled: openAccess,
@@ -86,6 +88,18 @@ export default function NewSurveyPage() {
               <label className="mb-1 block text-xs font-semibold text-dpsg-gray-600">Datum</label>
               <input type="date" value={date} onChange={e => setDate(e.target.value)}
                 className="rounded-lg border border-dpsg-gray-200 bg-white px-3 py-2 text-sm focus:border-dpsg-blue focus:outline-none focus:ring-2 focus:ring-dpsg-blue/20" />
+            </div>
+
+            <div>
+              <label className="mb-1 block text-xs font-semibold text-dpsg-gray-600">Kategorie</label>
+              <input value={category} onChange={e => setCategory(e.target.value)} placeholder="z.B. BL, Mitarbeitende, Veranstaltung"
+                className="w-full rounded-lg border border-dpsg-gray-200 bg-white px-3 py-2 text-sm focus:border-dpsg-blue focus:outline-none focus:ring-2 focus:ring-dpsg-blue/20"
+                list="category-suggestions" />
+              <datalist id="category-suggestions">
+                <option value="BL" />
+                <option value="Mitarbeitende" />
+                <option value="Veranstaltung" />
+              </datalist>
             </div>
 
             <div>

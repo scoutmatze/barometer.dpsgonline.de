@@ -5,9 +5,10 @@ import crypto from 'crypto';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     await requireUser(['ADMIN', 'BL']);
+    const category = request.nextUrl.searchParams.get('category');
     const result = await pool.query(`
       SELECT s.*,
         (SELECT COUNT(*) FROM responses r WHERE r.survey_id = s.id) as response_count,
@@ -15,8 +16,9 @@ export async function GET() {
           ORDER BY a.sort_order)
           FROM survey_agenda_items a WHERE a.survey_id = s.id) as agenda_items
       FROM surveys s
+      ${category ? 'WHERE s.category = $1' : ''}
       ORDER BY s.survey_date DESC NULLS LAST, s.created_at DESC
-    `);
+    `, category ? [category] : []);
     return NextResponse.json(result.rows);
   } catch (err: any) {
     if (err.message === 'Unauthorized') return NextResponse.json({ error: 'Nicht angemeldet' }, { status: 401 });
@@ -30,7 +32,7 @@ export async function POST(request: NextRequest) {
   try {
     const user = await requireUser(['ADMIN']);
     const body = await request.json();
-    const { title, subtitle, survey_date, agenda_items, emails, template_id, open_access_enabled } = body;
+    const { title, subtitle, survey_date, agenda_items, emails, template_id, open_access_enabled, category } = body;
 
     // Get template
     const tmplResult = await pool.query(
@@ -42,10 +44,10 @@ export async function POST(request: NextRequest) {
 
     // Create survey
     const surveyResult = await pool.query(`
-      INSERT INTO surveys (title, subtitle, survey_date, template_id, status, zusammenarbeit_items, numeric_items, freitext_items, created_by, open_access_enabled)
-      VALUES ($1, $2, $3, $4, 'draft', $5, $6, $7, $8, $9)
+      INSERT INTO surveys (title, subtitle, survey_date, template_id, status, zusammenarbeit_items, numeric_items, freitext_items, created_by, open_access_enabled, category)
+      VALUES ($1, $2, $3, $4, 'draft', $5, $6, $7, $8, $9, $10)
       RETURNING id
-    `, [title, subtitle, survey_date || null, tmpl.id, tmpl.zusammenarbeit_items, tmpl.numeric_items, tmpl.freitext_items, user.id, open_access_enabled || false]);
+    `, [title, subtitle, survey_date || null, tmpl.id, tmpl.zusammenarbeit_items, tmpl.numeric_items, tmpl.freitext_items, user.id, open_access_enabled || false, category || 'BL']);
 
     const surveyId = surveyResult.rows[0].id;
 

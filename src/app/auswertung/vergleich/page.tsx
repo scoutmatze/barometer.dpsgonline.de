@@ -136,14 +136,27 @@ function OverallGauge({ label, values, max }: { label: string; values: { label: 
 export default function VergleichPage() {
   const router = useRouter();
   const [data, setData] = useState<SurveyData[]>([]);
+  const [categories, setCategories] = useState<string[]>(['BL']);
+  const [activeCategory, setActiveCategory] = useState('BL');
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('zusammenarbeit');
 
   useEffect(() => {
-    fetch('/api/surveys/compare')
+    fetch('/api/categories').then(r => r.json()).then(cats => {
+      if (Array.isArray(cats) && cats.length > 0) setCategories(cats);
+    });
+    // Check URL param
+    const params = new URLSearchParams(window.location.search);
+    const cat = params.get('category');
+    if (cat) setActiveCategory(cat);
+  }, []);
+
+  useEffect(() => {
+    setLoading(true);
+    fetch('/api/surveys/compare?category=' + encodeURIComponent(activeCategory))
       .then(r => r.json())
       .then(d => { setData(Array.isArray(d) ? d : []); setLoading(false); });
-  }, []);
+  }, [activeCategory]);
 
   // Build zusammenarbeit trend data
   const zusammenarbeitTrends = useMemo(() => {
@@ -204,13 +217,26 @@ export default function VergleichPage() {
           </button>
           <div>
             <div className="text-base font-bold">Zeitvergleich</div>
-            <div className="text-xs opacity-50">{data.length} Sitzungen &middot; Trends über Zeit</div>
+            <div className="text-xs opacity-50">{activeCategory} · {data.length} Sitzungen</div>
           </div>
         </div>
         <div className="h-1 bg-dpsg-red" />
       </div>
 
       <div className="mx-auto max-w-5xl px-6 py-8">
+        {/* Category Tabs */}
+        <div className="mb-5 flex items-center gap-2 overflow-x-auto">
+          {categories.map(cat => (
+            <button key={cat} onClick={() => setActiveCategory(cat)}
+              className={'rounded-lg px-4 py-2 text-sm font-semibold transition-all '
+                + (activeCategory === cat
+                  ? 'bg-dpsg-blue text-white'
+                  : 'bg-dpsg-gray-100 text-dpsg-gray-600 hover:bg-dpsg-gray-200')}>
+              {cat}
+            </button>
+          ))}
+        </div>
+
         {loading ? (
           <div className="py-20 text-center text-sm text-dpsg-gray-400">Laden...</div>
         ) : (
