@@ -20,6 +20,63 @@ function getFingerprint() {
   return fp;
 }
 
+function OpenQAResponses({ activityId, fp }: { activityId: number; fp: string }) {
+  const [responses, setResponses] = useState<any[]>([]);
+  const [voted, setVoted] = useState<Record<number, boolean>>({});
+
+  useEffect(() => {
+    const poll = () => {
+      fetch('/api/live/' + activityId + '/responses')
+        .then(r => r.ok ? r.json() : null)
+        .then(d => { if (d) setResponses(d); })
+        .catch(() => {});
+    };
+    poll();
+    const i = setInterval(poll, 3000);
+    return () => clearInterval(i);
+  }, [activityId]);
+
+  async function upvote(responseId: number) {
+    if (voted[responseId]) return;
+    await fetch('/api/live/upvote', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ response_id: responseId, fingerprint: fp }),
+    });
+    setVoted(prev => ({ ...prev, [responseId]: true }));
+  }
+
+  if (responses.length === 0) return null;
+
+  return (
+    <div style={{ borderTop: '1px solid #e8e5df', paddingTop: 12 }}>
+      <p style={{ fontSize: 12, color: '#9e9a92', marginBottom: 8 }}>Bisherige Vorschläge — tippe zum Hochvoten:</p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {responses
+          .sort((a: any, b: any) => (b.upvotes || 0) - (a.upvotes || 0))
+          .map((r: any) => (
+            <button key={r.id} onClick={() => upvote(r.id)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 10, width: '100%',
+                padding: '10px 12px', borderRadius: 10,
+                border: voted[r.id] ? '2px solid #003056' : '1px solid #e8e5df',
+                background: voted[r.id] ? 'rgba(0,48,86,0.05)' : '#f5f3ef',
+                cursor: 'pointer', textAlign: 'left' as any,
+                WebkitTapHighlightColor: 'transparent',
+              }}>
+              <span style={{
+                minWidth: 28, height: 28, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: voted[r.id] ? '#003056' : '#e8e5df',
+                color: voted[r.id] ? 'white' : '#5c5850',
+                fontSize: 13, fontWeight: 700,
+              }}>{r.upvotes || 0}</span>
+              <span style={{ fontSize: 15, color: '#1a1815' }}>{r.value_text}</span>
+            </button>
+          ))}
+      </div>
+    </div>
+  );
+}
+
 export default function LiveParticipant({ params }: { params: Promise<{ code: string }> }) {
   const { code } = use(params);
   const [session, setSession] = useState<any>(null);
@@ -269,20 +326,20 @@ export default function LiveParticipant({ params }: { params: Promise<{ code: st
             {act.type === 'openqa' && (
               <div style={{ background: 'white', borderRadius: 16, border: '1px solid #e8e5df', padding: '20px 16px' }}>
                 <h3 style={{ fontSize: 20, fontWeight: 700, color: '#1a1815', margin: '0 0 4px' }}>{act.title}</h3>
-                <p style={{ fontSize: 13, color: '#7a756c', margin: '0 0 16px' }}>Schreib deinen Vorschlag</p>
-                {!submitted[act.id] && (
-                  <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-                    <input value={wordInput} onChange={e => setWordInput(e.target.value)}
-                      placeholder="Dein Vorschlag..."
-                      onKeyDown={e => { if (e.key === 'Enter' && wordInput.trim()) { submitResponse(act.id, undefined, wordInput.trim()); setWordInput(''); }}}
-                      style={{ flex: 1, padding: '12px 14px', borderRadius: 12, border: '2px solid #e8e5df', fontSize: 16, boxSizing: 'border-box' as any }} />
-                    <button onClick={() => { if (wordInput.trim()) { submitResponse(act.id, undefined, wordInput.trim()); setWordInput(''); }}}
-                      disabled={!wordInput.trim() || sending}
-                      style={{ padding: '12px 20px', borderRadius: 12, background: wordInput.trim() ? '#003056' : '#d4d0c8', color: 'white', border: 'none', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>
-                      &#10148;
-                    </button>
-                  </div>
-                )}
+                <p style={{ fontSize: 13, color: '#7a756c', margin: '0 0 16px' }}>Schreib deinen Vorschlag — du kannst mehrere einreichen</p>
+                <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+                  <input value={wordInput} onChange={e => setWordInput(e.target.value)}
+                    placeholder="Dein Vorschlag..."
+                    onKeyDown={e => { if (e.key === 'Enter' && wordInput.trim()) { submitResponse(act.id, undefined, wordInput.trim()); setWordInput(''); }}}
+                    style={{ flex: 1, padding: '12px 14px', borderRadius: 12, border: '2px solid #e8e5df', fontSize: 16, boxSizing: 'border-box' as any }} />
+                  <button onClick={() => { if (wordInput.trim()) { submitResponse(act.id, undefined, wordInput.trim()); setWordInput(''); }}}
+                    disabled={!wordInput.trim() || sending}
+                    style={{ padding: '12px 20px', borderRadius: 12, background: wordInput.trim() ? '#003056' : '#d4d0c8', color: 'white', border: 'none', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>
+                    &#10148;
+                  </button>
+                </div>
+                {/* Live responses with upvoting - fetched via polling */}
+                <OpenQAResponses activityId={act.id} fp={fp} />
               </div>
             )}
           </div>

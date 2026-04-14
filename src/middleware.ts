@@ -14,8 +14,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Live results endpoint (public for beamer)
-  if (pathname.match(/^\/api\/live\/\d+\/results$/)) {
+  // Live results + responses endpoints (public for beamer and participant polling)
+  if (pathname.match(/^\/api\/live\/\d+\/(results|responses)$/)) {
     return NextResponse.next();
   }
 

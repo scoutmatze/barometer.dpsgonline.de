@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
     const { activity_id, value_numeric, value_text, fingerprint } = await request.json();
 
     const activity = await pool.query(
-      `SELECT la.id, la.status, ls.status as session_status
+      `SELECT la.id, la.status, la.type, ls.status as session_status
        FROM live_activities la JOIN live_sessions ls ON ls.id = la.session_id
        WHERE la.id = $1`, [activity_id]
     );
@@ -18,6 +18,17 @@ export async function POST(request: NextRequest) {
 
     const sessionHash = crypto.createHash('sha256').update(fingerprint || crypto.randomBytes(16).toString('hex')).digest('hex').slice(0, 32);
 
+    if (activity.rows[0].type === 'openqa') {
+      // Open Q&A: allow multiple submissions per person
+      const uniqueHash = sessionHash + '_' + Date.now();
+      const result = await pool.query(
+        `INSERT INTO live_responses (activity_id, session_hash, value_text) VALUES ($1, $2, $3) RETURNING id`,
+        [activity_id, uniqueHash, value_text || null]
+      );
+      return NextResponse.json({ ok: true, id: result.rows[0].id });
+    }
+
+    // All other types: one response per person (upsert)
     await pool.query(`
       INSERT INTO live_responses (activity_id, session_hash, value_numeric, value_text)
       VALUES ($1, $2, $3, $4)
