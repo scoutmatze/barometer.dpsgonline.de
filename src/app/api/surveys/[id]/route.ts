@@ -32,7 +32,7 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
 
 export async function PATCH(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await requireUser(['ADMIN']);
+    await requireUser(['ADMIN', 'BL']);
     const { id } = await params;
     const body = await _.json();
 

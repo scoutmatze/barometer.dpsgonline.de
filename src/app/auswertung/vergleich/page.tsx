@@ -31,7 +31,7 @@ function TrendLine({ data, max, height = 180 }: { data: { label: string; value: 
   const pointSpacing = 56;
   const w = Math.max(data.length * pointSpacing + 40, 400);
   const h = height;
-  const padding = { top: 24, bottom: 48, left: 20, right: 30 };
+  const padding = { top: 32, bottom: 48, left: 20, right: 20 };
   const chartW = w - padding.left - padding.right;
   const chartH = h - padding.top - padding.bottom;
 
@@ -50,60 +50,62 @@ function TrendLine({ data, max, height = 180 }: { data: { label: string; value: 
     : 0;
 
   return (
-    <div style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-      <svg width={w} height={h} viewBox={'0 0 ' + w + ' ' + h}>
-        {/* Grid lines with labels */}
-        {[1, 2, 3, 4, 5].filter(v => v <= max).map((v) => {
-          const y = padding.top + chartH - (v / max) * chartH;
-          return (
-            <g key={v}>
-              <line x1={padding.left} y1={y} x2={w - padding.right} y2={y} stroke="#e8e5df" strokeWidth="1" />
-              <text x={padding.left - 4} y={y + 4} textAnchor="end" fontSize="10" fill="#9e9a92">{v}</text>
-            </g>
-          );
-        })}
+    <div style={{ position: 'relative' }}>
+      {/* Trend badge - positioned outside SVG */}
+      {trend !== 0 && (
+        <div style={{
+          position: 'absolute', top: 0, right: 8, zIndex: 1,
+          padding: '3px 10px', borderRadius: 8,
+          background: trend > 0 ? '#dcfce7' : '#fef2f2',
+          fontSize: 13, fontWeight: 700,
+          color: trend > 0 ? '#16a34a' : trend < -0.3 ? '#ef4444' : '#eab308',
+        }}>
+          {trend > 0 ? '\u2191' : '\u2193'} {Math.abs(trend).toFixed(1)}
+        </div>
+      )}
+      <div style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+        <svg width={w} height={h} viewBox={'0 0 ' + w + ' ' + h}>
+          {/* Grid lines with labels */}
+          {[1, 2, 3, 4, 5].filter(v => v <= max).map((v) => {
+            const y = padding.top + chartH - (v / max) * chartH;
+            return (
+              <g key={v}>
+                <line x1={padding.left} y1={y} x2={w - padding.right} y2={y} stroke="#e8e5df" strokeWidth="1" />
+                <text x={padding.left - 4} y={y + 4} textAnchor="end" fontSize="10" fill="#9e9a92">{v}</text>
+              </g>
+            );
+          })}
 
-        {/* Connecting line */}
-        <path d={pathD} fill="none" stroke="#003056" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+          {/* Connecting line */}
+          <path d={pathD} fill="none" stroke="#003056" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
 
-        {/* Data points */}
-        {points.map((p, i) => (
-          <g key={i}>
-            <circle cx={p.x} cy={p.y} r="5" fill={p.value > 0 ? likertColor(p.value) : '#d4d0c8'} stroke="white" strokeWidth="2" />
-            {p.value > 0 && (
-              <text x={p.x} y={p.y - 10} textAnchor="middle" fontSize="12" fontWeight="700" fill={likertColor(p.value)} fontFamily="'PT Sans Narrow', sans-serif">
-                {p.value.toFixed(1)}
+          {/* Data points */}
+          {points.map((p, i) => (
+            <g key={i}>
+              <circle cx={p.x} cy={p.y} r="5" fill={p.value > 0 ? likertColor(p.value) : '#d4d0c8'} stroke="white" strokeWidth="2" />
+              {p.value > 0 && (
+                <text x={p.x} y={p.y - 12} textAnchor="middle" fontSize="12" fontWeight="700" fill={likertColor(p.value)} fontFamily="'PT Sans Narrow', sans-serif">
+                  {p.value.toFixed(1)}
+                </text>
+              )}
+              {/* X-axis labels */}
+              <text x={p.x} y={h - padding.bottom + 16} textAnchor="middle" fontSize="11" fill="#5c5850" fontWeight="600" fontFamily="'PT Sans Narrow', sans-serif">
+                {p.label.replace('BL ', '')}
               </text>
-            )}
-            {/* X-axis labels - rotated */}
-            <text x={p.x} y={h - padding.bottom + 16} textAnchor="middle" fontSize="11" fill="#5c5850" fontWeight="600" fontFamily="'PT Sans Narrow', sans-serif">
-              {p.label.replace('BL ', '')}
-            </text>
-            {/* Year below */}
-            {(() => {
-              const yearMatch = p.label.match(/\/(\d{4})/);
-              const prevYear = i > 0 ? data[i-1].label.match(/\/(\d{4})/)?.[1] : null;
-              const year = yearMatch?.[1];
-              if (year && year !== prevYear) {
-                return <text x={p.x} y={h - padding.bottom + 30} textAnchor="middle" fontSize="10" fill="#9e9a92" fontFamily="'PT Sans Narrow', sans-serif">{year}</text>;
-              }
-              return null;
-            })()}
-          </g>
-        ))}
-
-        {/* Trend indicator */}
-        {trend !== 0 && (
-          <g>
-            <rect x={w - 58} y={2} width={52} height={22} rx="6" fill={trend > 0 ? '#dcfce7' : '#fef2f2'} />
-            <text x={w - 32} y={17} textAnchor="middle" fontSize="13" fontWeight="700"
-              fill={trend > 0 ? '#16a34a' : trend < -0.3 ? '#ef4444' : '#eab308'}
-              fontFamily="'PT Sans Narrow', sans-serif">
-              {trend > 0 ? '\u2191' : '\u2193'} {Math.abs(trend).toFixed(1)}
-            </text>
-          </g>
-        )}
-      </svg>
+              {/* Year below */}
+              {(() => {
+                const yearMatch = p.label.match(/\/(\d{4})/);
+                const prevYear = i > 0 ? data[i-1].label.match(/\/(\d{4})/)?.[1] : null;
+                const year = yearMatch?.[1];
+                if (year && year !== prevYear) {
+                  return <text x={p.x} y={h - padding.bottom + 30} textAnchor="middle" fontSize="10" fill="#9e9a92" fontFamily="'PT Sans Narrow', sans-serif">{year}</text>;
+                }
+                return null;
+              })()}
+            </g>
+          ))}
+        </svg>
+      </div>
     </div>
   );
 }
@@ -138,6 +140,7 @@ export default function VergleichPage() {
   const [data, setData] = useState<SurveyData[]>([]);
   const [categories, setCategories] = useState<string[]>(['BL']);
   const [activeCategory, setActiveCategory] = useState('BL');
+  const [selectedYear, setSelectedYear] = useState<string>('alle');
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('zusammenarbeit');
 
@@ -145,7 +148,6 @@ export default function VergleichPage() {
     fetch('/api/categories').then(r => r.json()).then(cats => {
       if (Array.isArray(cats) && cats.length > 0) setCategories(cats);
     });
-    // Check URL param
     const params = new URLSearchParams(window.location.search);
     const cat = params.get('category');
     if (cat) setActiveCategory(cat);
@@ -158,13 +160,29 @@ export default function VergleichPage() {
       .then(d => { setData(Array.isArray(d) ? d : []); setLoading(false); });
   }, [activeCategory]);
 
+  // Available years from data
+  const availableYears = useMemo(() => {
+    const years = new Set<string>();
+    data.forEach(s => {
+      if (s.survey_date) years.add(s.survey_date.slice(0, 4));
+    });
+    return ['alle', 'letzte5', ...Array.from(years).sort()];
+  }, [data]);
+
+  // Filtered data by year
+  const filteredData = useMemo(() => {
+    if (selectedYear === 'alle') return data;
+    if (selectedYear === 'letzte5') return data.slice(-5);
+    return data.filter(s => s.survey_date && s.survey_date.startsWith(selectedYear));
+  }, [data, selectedYear]);
+
   // Build zusammenarbeit trend data
   const zusammenarbeitTrends = useMemo(() => {
-    if (data.length === 0) return [];
-    const items = data[data.length - 1]?.zusammenarbeit_items || [];
+    if (filteredData.length === 0) return [];
+    const items = filteredData[filteredData.length - 1]?.zusammenarbeit_items || [];
     return items.map((item: string, idx: number) => ({
       label: item,
-      values: data.map(s => ({
+      values: filteredData.map(s => ({
         label: s.title,
         value: (() => {
           const avg = s.averages.find(a => a.section === 'zusammenarbeit' && a.question_key === String(idx));
@@ -172,17 +190,17 @@ export default function VergleichPage() {
         })(),
       })),
     }));
-  }, [data]);
+  }, [filteredData]);
 
   // Build numeric trend data
   const numericTrends = useMemo(() => {
-    if (data.length === 0) return [];
-    const items = data[data.length - 1]?.numeric_items || [];
+    if (filteredData.length === 0) return [];
+    const items = filteredData[filteredData.length - 1]?.numeric_items || [];
     return items.map((item: any) => ({
       label: item.label,
       max: item.max,
       key: item.key,
-      values: data.map(s => ({
+      values: filteredData.map(s => ({
         label: s.title,
         value: (() => {
           const avg = s.averages.find(a => a.section === 'numeric' && a.question_key === item.key);
@@ -190,18 +208,18 @@ export default function VergleichPage() {
         })(),
       })),
     }));
-  }, [data]);
+  }, [filteredData]);
 
   // Overall averages per survey
   const overallTrend = useMemo(() => {
-    return data.map(s => {
+    return filteredData.map(s => {
       const zusAvgs = s.averages
         .filter(a => a.section === 'zusammenarbeit' && Number(a.avg_value) > 0)
         .map(a => Number(a.avg_value));
       const avg = zusAvgs.length > 0 ? zusAvgs.reduce((a, b) => a + b, 0) / zusAvgs.length : 0;
       return { label: s.title, value: avg, count: Number(s.response_count) };
     });
-  }, [data]);
+  }, [filteredData]);
 
   const tabs = [
     { key: 'zusammenarbeit', label: 'Zusammenarbeit', icon: <Users className="h-3.5 w-3.5" /> },
@@ -217,7 +235,7 @@ export default function VergleichPage() {
           </button>
           <div>
             <div className="text-base font-bold">Zeitvergleich</div>
-            <div className="text-xs opacity-50">{activeCategory} · {data.length} Sitzungen</div>
+            <div className="text-xs opacity-50">{activeCategory} · {filteredData.length} Sitzungen{selectedYear === 'letzte5' ? ' · Letzte 5' : selectedYear !== 'alle' ? ' · ' + selectedYear : ''}</div>
           </div>
         </div>
         <div className="h-1 bg-dpsg-red" />
@@ -237,8 +255,28 @@ export default function VergleichPage() {
           ))}
         </div>
 
+        {/* Year Filter */}
+        {!loading && availableYears.length > 2 && (
+          <div className="mb-5 flex items-center gap-2 overflow-x-auto">
+            <span className="text-xs font-semibold text-dpsg-gray-400 mr-1">Zeitraum:</span>
+            {availableYears.map(year => (
+              <button key={year} onClick={() => setSelectedYear(year)}
+                className={'rounded-full px-3 py-1 text-xs font-semibold transition-all '
+                  + (selectedYear === year
+                    ? 'bg-dpsg-blue text-white'
+                    : 'bg-dpsg-gray-100 text-dpsg-gray-500 hover:bg-dpsg-gray-200')}>
+                {year === 'alle' ? 'Alle Jahre' : year === 'letzte5' ? 'Letzte 5' : year}
+              </button>
+            ))}
+          </div>
+        )}
+
         {loading ? (
           <div className="py-20 text-center text-sm text-dpsg-gray-400">Laden...</div>
+        ) : filteredData.length === 0 ? (
+          <div className="rounded-xl border border-dpsg-gray-200 bg-white py-16 text-center">
+            <p className="text-sm text-dpsg-gray-500">Keine Sitzungen für diesen Zeitraum.</p>
+          </div>
         ) : (
           <>
             {/* Overall trend card */}

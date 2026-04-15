@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await requireUser(['ADMIN']);
+    const user = await requireUser(['ADMIN', 'BL']);
     const body = await request.json();
     const { title, subtitle, survey_date, agenda_items, emails, template_id, open_access_enabled, category } = body;
 

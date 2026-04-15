@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { LogOut, BarChart3, Eye, GitCompare } from 'lucide-react';
+import { LogOut, BarChart3, Eye, GitCompare, KeyRound } from 'lucide-react';
 
 export default function AuswertungPage() {
   const router = useRouter();
@@ -49,6 +49,10 @@ export default function AuswertungPage() {
             <button onClick={() => router.push('/auswertung/vergleich?category=' + encodeURIComponent(activeCategory))}
               className="flex items-center gap-1 rounded-lg bg-white/10 px-3 py-1.5 text-xs hover:bg-white/20">
               <GitCompare className="h-3 w-3" /> Vergleich
+            </button>
+            <button onClick={() => router.push('/profil')}
+              className="flex items-center gap-1 rounded-lg bg-white/10 px-3 py-1.5 text-xs hover:bg-white/20">
+              <KeyRound className="h-3 w-3" /> PIN
             </button>
             <button onClick={logout} className="flex items-center gap-1 text-xs opacity-70 hover:opacity-100">
               <LogOut className="h-3.5 w-3.5" /> Abmelden

@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, BarChart3, Upload, LogOut, ClipboardList, Lock, Unlock, Eye, Zap } from 'lucide-react';
+import { Plus, BarChart3, Upload, LogOut, ClipboardList, Lock, Unlock, Eye, Zap, GitCompare, KeyRound } from 'lucide-react';
 
 interface Survey {
   id: number;
@@ -23,8 +23,10 @@ export default function AdminDashboard() {
   const [categories, setCategories] = useState<string[]>([]);
   const [activeCategory, setActiveCategory] = useState<string>('BL');
   const [loading, setLoading] = useState(true);
+  const [userRole, setUserRole] = useState<string>('');
 
   useEffect(() => {
+    fetch('/api/auth/me').then(r => r.json()).then(d => { if (d.role) setUserRole(d.role); });
     fetch('/api/categories').then(r => r.json()).then(cats => {
       if (Array.isArray(cats) && cats.length > 0) setCategories(cats);
       else setCategories(['BL']);
@@ -82,12 +84,17 @@ export default function AdminDashboard() {
             </svg>
             <div>
               <div className="text-base font-bold">BL-O-Meter</div>
-              <div className="text-xs opacity-50">Admin</div>
+              <div className="text-xs opacity-50">{userRole === 'ADMIN' ? 'Admin' : 'Moderator'}</div>
             </div>
           </div>
-          <button onClick={logout} className="flex items-center gap-1.5 text-xs opacity-70 hover:opacity-100">
-            <LogOut className="h-3.5 w-3.5" /> Abmelden
-          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={() => router.push('/profil')} className="flex items-center gap-1.5 text-xs opacity-70 hover:opacity-100">
+              <KeyRound className="h-3.5 w-3.5" /> PIN
+            </button>
+            <button onClick={logout} className="flex items-center gap-1.5 text-xs opacity-70 hover:opacity-100">
+              <LogOut className="h-3.5 w-3.5" /> Abmelden
+            </button>
+          </div>
         </div>
         <div className="h-1 bg-dpsg-red" />
       </div>
@@ -100,14 +107,20 @@ export default function AdminDashboard() {
             <p className="text-sm text-dpsg-gray-500">Rückmeldungen verwalten und auswerten</p>
           </div>
           <div className="flex gap-2">
+            <button onClick={() => router.push('/auswertung/vergleich?category=' + encodeURIComponent(activeCategory))}
+              className="flex items-center gap-1.5 rounded-lg bg-dpsg-blue/10 px-3 py-2 text-xs font-semibold text-dpsg-blue hover:bg-dpsg-blue/20">
+              <GitCompare className="h-3.5 w-3.5" /> Zeitvergleich
+            </button>
             <button onClick={() => router.push('/admin/live')}
               className="flex items-center gap-1.5 rounded-lg bg-dpsg-red px-3 py-2 text-xs font-semibold text-white hover:bg-dpsg-red-light">
               <Zap className="h-3.5 w-3.5" /> Live-Sessions
             </button>
-            <button onClick={() => router.push('/admin/import')}
-              className="flex items-center gap-1.5 rounded-lg bg-dpsg-gray-100 px-3 py-2 text-xs font-semibold text-dpsg-gray-700 hover:bg-dpsg-gray-200">
-              <Upload className="h-3.5 w-3.5" /> Import
-            </button>
+            {userRole === 'ADMIN' && (
+              <button onClick={() => router.push('/admin/import')}
+                className="flex items-center gap-1.5 rounded-lg bg-dpsg-gray-100 px-3 py-2 text-xs font-semibold text-dpsg-gray-700 hover:bg-dpsg-gray-200">
+                <Upload className="h-3.5 w-3.5" /> Import
+              </button>
+            )}
             <button onClick={() => router.push('/admin/neu')}
               className="flex items-center gap-1.5 rounded-lg bg-dpsg-blue px-4 py-2 text-sm font-semibold text-white hover:bg-dpsg-blue-light">
               <Plus className="h-4 w-4" /> Neue Sitzung

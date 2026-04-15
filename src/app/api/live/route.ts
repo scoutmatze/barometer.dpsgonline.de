@@ -24,7 +24,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await requireUser(['ADMIN']);
+    const user = await requireUser(['ADMIN', 'BL']);
     const { title, subtitle, session_date, activities } = await request.json();
     const code = crypto.randomBytes(3).toString('hex').toUpperCase();
 

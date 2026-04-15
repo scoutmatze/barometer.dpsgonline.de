@@ -26,7 +26,7 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await requireUser(['ADMIN']);
+    await requireUser(['ADMIN', 'BL']);
     const { id } = await params;
     const body = await request.json();
 
