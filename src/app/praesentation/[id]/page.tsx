@@ -156,7 +156,6 @@ export default function PresentationPage({ params }: { params: Promise<{ id: str
 
   return (
     <div style={{ background: '#003056', minHeight: '100vh', display: 'flex', flexDirection: 'column', fontFamily: "'PT Sans Narrow', system-ui, sans-serif" }}>
-      <link href="https://fonts.googleapis.com/css2?family=PT+Sans+Narrow:wght@400;700&display=swap" rel="stylesheet" />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         {slides[currentSlide]()}
       </div>

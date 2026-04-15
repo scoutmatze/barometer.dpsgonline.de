@@ -128,7 +128,6 @@ export default function LiveParticipant({ params }: { params: Promise<{ code: st
 
   return (
     <div style={{ fontFamily: "'PT Sans Narrow', system-ui, sans-serif", background: '#faf9f6', minHeight: '100vh', maxWidth: 480, margin: '0 auto' }}>
-      <link href="https://fonts.googleapis.com/css2?family=PT+Sans+Narrow:wght@400;700&display=swap" rel="stylesheet" />
 
       {/* Header */}
       <div style={{ background: '#003056', color: 'white', padding: '14px 20px' }}>

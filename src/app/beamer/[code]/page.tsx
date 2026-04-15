@@ -50,7 +50,6 @@ export default function BeamerView({ params }: { params: Promise<{ code: string 
 
   if (!session) return (
     <div style={{ background: '#003056', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontFamily: "'PT Sans Narrow', system-ui, sans-serif" }}>
-      <link href="https://fonts.googleapis.com/css2?family=PT+Sans+Narrow:wght@400;700&display=swap" rel="stylesheet" />
       <p style={{ fontSize: 20 }}>Laden...</p>
     </div>
   );
@@ -61,7 +60,6 @@ export default function BeamerView({ params }: { params: Promise<{ code: string 
 
   return (
     <div style={{ background: '#003056', minHeight: '100vh', fontFamily: "'PT Sans Narrow', system-ui, sans-serif", display: 'flex', flexDirection: 'column' }}>
-      <link href="https://fonts.googleapis.com/css2?family=PT+Sans+Narrow:wght@400;700&display=swap" rel="stylesheet" />
 
       {/* Header */}
       <div style={{ padding: '20px 40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
