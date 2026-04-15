@@ -224,7 +224,7 @@ export default function SurveyPage({ params }: { params: Promise<{ token: string
               border: 'none', fontSize: 16, fontWeight: 700, cursor: 'pointer',
             }}>Los geht&apos;s</button>
             <div style={{ marginTop: 16, fontSize: 12, color: '#9e9a92', display: 'flex', alignItems: 'center', gap: 6 }}>
-              Anonym &middot; Einmalig &middot; DSGVO-konform
+              Anonym &middot; Einmalig &middot; <a href="/datenschutz" style={{ color: '#003056', textDecoration: 'underline' }}>Datenschutz</a>
             </div>
           </div>
         )}

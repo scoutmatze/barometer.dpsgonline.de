@@ -92,6 +92,9 @@ export default function LoginPage() {
         <p className="mt-4 text-center text-xs text-dpsg-gray-400">
           Zugang nur für Admin und BL-Mitglieder
         </p>
+        <p className="mt-2 text-center">
+          <a href="/datenschutz" className="text-xs text-dpsg-blue underline hover:text-dpsg-blue-light">Datenschutz</a>
+        </p>
       </div>
     </div>
   );
